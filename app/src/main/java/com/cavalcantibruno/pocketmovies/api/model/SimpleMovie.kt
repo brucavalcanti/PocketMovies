@@ -1,5 +1,7 @@
 package com.cavalcantibruno.pocketmovies.api.model
 
+import java.io.Serializable
+
 data class SimpleMovie(
     val Title:String,
     val Year:String,
@@ -7,4 +9,4 @@ data class SimpleMovie(
     val Type:String,
     val Poster:String,
 
-)
+) : Serializable

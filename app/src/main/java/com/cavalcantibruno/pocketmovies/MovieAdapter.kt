@@ -7,7 +7,7 @@ import com.cavalcantibruno.pocketmovies.api.model.SimpleMovie
 import com.cavalcantibruno.pocketmovies.databinding.MovieItemBinding
 import com.squareup.picasso.Picasso
 
-class MovieAdapter(private val movieList:List<SimpleMovie>)
+class MovieAdapter(private val movieList:List<SimpleMovie>, private val click: (SimpleMovie)->Unit)
     :RecyclerView.Adapter<MovieAdapter.MovieViewHolder>() {
 
     inner class MovieViewHolder(itemBinding: MovieItemBinding)
@@ -20,7 +20,18 @@ class MovieAdapter(private val movieList:List<SimpleMovie>)
         }
 
         fun binding(movieItem:SimpleMovie){
-            Picasso.get().load(movieItem.Poster).resize(300,400).into(binding.posterImage)
+            if(movieItem.Poster == "N/A"){
+                Picasso.get().load("https://upload.wikimedia.org/wikipedia/commons/thumb/6" +
+                        "/65/No-Image-Placeholder.svg/1665px-No-Image-Placeholder.svg.png")
+                    .resize(300,400).into(binding.posterImage)
+            }else {
+                Picasso.get().load(movieItem.Poster)
+                    .resize(300, 400).into(binding.posterImage)
+            }
+            binding.cardMovie.setOnClickListener {
+                click(movieItem)
+            }
+
         }
 
     }

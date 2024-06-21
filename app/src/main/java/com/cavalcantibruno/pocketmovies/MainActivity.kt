@@ -1,5 +1,6 @@
 package com.cavalcantibruno.pocketmovies
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -18,6 +19,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import retrofit2.Response
 
+
+const val MAIN_ACTIVITY = "MainActivity"
+
+const val GET_MOVIE_LIST = "GetMovieList"
+
 class MainActivity : AppCompatActivity() {
     private val retrofitMovie by lazy {
         RetrofitHelper.retrofit
@@ -27,52 +33,85 @@ class MainActivity : AppCompatActivity() {
         ActivityMainBinding.inflate(layoutInflater)
     }
 
+
+
+    var selectPage = 1
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
-        /*8279c620*/
-        val apiKey = "8279c620"
-        Log.i("MainActivity", "onCreate: App Started ")
 
-        binding.btnTeste.setOnClickListener {
+
+        val apiKey = "{ApiKey}"
+        binding.nextPage.isEnabled = false
+        binding.prevPage.isEnabled = false
+        var auxMovieTitle= ""
+        Log.i(MAIN_ACTIVITY, "onCreate: App Started ")
+
+        binding.btnSearch.setOnClickListener {
             val movieTitle = binding.searchBar.text.toString()
+            auxMovieTitle = movieTitle
             binding.searchBar.text = null
             CoroutineScope(Dispatchers.IO).launch {
-                Log.i("Pão", "onCreate: Chegou aqui")
+                Log.i(MAIN_ACTIVITY, "onCreate: Coroutine Started")
                 getMovieList(movieTitle,"1",apiKey)
             }
         }
 
+
+
+        binding.nextPage.setOnClickListener {
+
+            selectPage+=1
+            CoroutineScope(Dispatchers.IO).launch {
+                Log.i(MAIN_ACTIVITY, "onCreate: NextPage Coroutine Started")
+                getMovieList(auxMovieTitle,"$selectPage",apiKey)
+            }
+        }
+
+        binding.prevPage.setOnClickListener {
+                selectPage -=1
+                CoroutineScope(Dispatchers.IO).launch {
+                    Log.i(MAIN_ACTIVITY, "onCreate: PrevPage Coroutine Started")
+                    getMovieList(auxMovieTitle,"$selectPage",apiKey)
+                }
+
+        }
     }
+
+
 
     private suspend fun getMovieList(title:String,page:String,apiKey:String){
         var dataReturn: Response<MovieSearch>? = null
-        Log.i("Pão", "getTitle: Entrou aqui")
+        Log.i(GET_MOVIE_LIST, "getMovieList: Started List Request")
         try {
             val movieData = retrofitMovie.create(MediaAPI::class.java)
             dataReturn = movieData.getMovieList(title,page,apiKey)
-            Log.i("Pão", "getTitle: Entrou aqui2")
-            Log.i("Pão", "geoConvert: $dataReturn")
+            Log.i(GET_MOVIE_LIST, "getMovieList: Requesting data from API")
+            Log.d(GET_MOVIE_LIST, " DataReturn: $dataReturn")
         }catch (e:Exception) {
             e.printStackTrace()
-            Log.i("Pão", "getTitleError: ${e.message} ")
+            Log.i(GET_MOVIE_LIST, "getMovieListError: ${e.message} ")
         }
             if(dataReturn!=null)
             {
-                Log.i("Pão", "geoConvert: $dataReturn")
                 if(dataReturn.isSuccessful){
                     val omdbMovie = dataReturn.body()
                     val movieList = omdbMovie?.Search
-                    Log.i("Pão", "getTitle: $omdbMovie ")
-                    /*val omdbName = omdbMovie?.Title
-                    val omdbDate = omdbMovie?.Released
-                    val omdbPlot = omdbMovie?.Plot
-                    val omdbPoster = omdbMovie?.Poster*/
+                    Log.d(GET_MOVIE_LIST, "getMovieList: $omdbMovie")
+                    Log.d(GET_MOVIE_LIST, "getMovieList: $movieList")
                     withContext(Dispatchers.Main){
                         with(binding){
+
+                            prevPage.isEnabled = selectPage != 1
                             if(movieList!=null){
+                                Log.d(GET_MOVIE_LIST, "getMovieList: $movieList")
                                 rvMovies.adapter = omdbMovie.let {
-                                    MovieAdapter(movieList)
+
+                                    MovieAdapter(movieList){item->
+                                        val intent = Intent(this@MainActivity,TitleActivity::class.java)
+                                        intent.putExtra("mediaItem",item)
+                                        startActivity(intent)
+                                    }
                                 }
                                rvMovies.layoutManager = GridLayoutManager(this@MainActivity,3)
                             }
@@ -82,6 +121,4 @@ class MainActivity : AppCompatActivity() {
             }
 
     }
-
-
 }
